@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Set any three of goal, target age, start age and monthly amount, and see the fourth. Shows what waiting to invest really costs.">
+<meta name="theme-color" content="#09090b">
+<title>Too Late to Start?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Comfortaa:wght@700&display=swap">
+<style>
+/* Layout: abbox look — zinc-black ground, one orange signal; controls left, live answer + curve right; stacks on phones. */
+:root {
+  --bg: #09090b;
+  --surface: #18181b;
+  --surface-2: #27272a;
+  --ink: #fafafa;
+  --muted: #a1a1aa;
+  --line: #27272a;
+  --line-strong: #3f3f46;
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --accent-soft: #2a1810;
+  --solved: #f97316;
+  --solved-soft: #1f140c;
+  --solved-border: #9a3412;
+  --you: #52525b;
+  --danger: #fca5a5;
+  --font-display: "Geist", "Inter", system-ui, sans-serif;
+  --font-body: "Geist", "Inter", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-logo: "Comfortaa", "Geist", system-ui, sans-serif;
+  --radius: 6px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+}
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-block: 32px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px;
+}
+header { display: grid; gap: 8px; max-width: 64ch; }
+h1 {
+  font-family: var(--font-display); font-weight: 600;
+  font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.05; letter-spacing: -0.03em;
+  margin: 0; text-wrap: balance;
+}
+h1 em { font-style: normal; color: var(--accent); }
+.lede { margin: 0; color: var(--muted); font-size: 1.02rem; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+
+.controls { display: grid; gap: 12px; }
+.howto { margin: 0; font-size: 0.88rem; color: var(--muted); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px 12px; display: grid; gap: 6px;
+  transition: border-color .2s, background-color .2s;
+}
+.card.solved { border-color: var(--solved-border); background: var(--solved-soft); }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.card-head .name {
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted);
+}
+.solve-toggle {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: 0.78rem; font-weight: 500; color: var(--muted);
+  padding: 3px 9px 3px 7px; border-radius: 0; border: 1px solid var(--line-strong);
+  user-select: none;
+}
+.solve-toggle input { margin: 0; accent-color: var(--solved); }
+.solve-toggle:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card.solved .solve-toggle { border-color: var(--solved-border); color: var(--accent); background: var(--accent-soft); }
+.value {
+  font-family: var(--font-display); font-weight: 600; font-size: 1.9rem; line-height: 1.1;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+}
+.card.solved .value { color: var(--solved); }
+.value small { font-family: var(--font-body); font-size: 0.9rem; font-weight: 500; color: var(--muted); margin-left: 4px; }
+
+input[type=range] { width: 100%; accent-color: var(--accent); height: 22px; margin: 2px 0 0; cursor: pointer; }
+input[type=range]:disabled { accent-color: var(--solved); cursor: not-allowed; opacity: 0.85; }
+input[type=range]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.scale { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+
+.settings {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; align-items: center;
+  padding: 12px 16px; border: 1px dashed var(--line-strong); border-radius: var(--radius);
+}
+.settings label { font-size: 0.85rem; font-weight: 500; }
+.settings .rate-val { font-family: var(--font-mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+.settings .note { grid-column: 1 / -1; font-size: 0.78rem; color: var(--muted); margin: 0; }
+.settings select {
+  font: inherit; font-size: 0.85rem; padding: 4px 8px; border-radius: 8px;
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+}
+.settings .full { grid-column: 1 / -1; }
+
+.results { display: grid; gap: 16px; min-width: 0; }
+.answer {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 22px 24px; display: grid; gap: 6px;
+}
+.answer .eyebrow { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--solved); }
+.answer .big {
+  font-family: var(--font-display); font-weight: 600; font-size: clamp(2.4rem, 6vw, 3.6rem);
+  line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+}
+.answer .sentence { margin: 6px 0 0; font-size: 1.02rem; max-width: 60ch; }
+.answer .sentence b { font-weight: 600; }
+.answer.error .big { color: var(--danger); font-size: clamp(1.6rem, 4vw, 2.2rem); }
+
+.split { display: grid; gap: 8px; margin-top: 12px; }
+.bar { display: flex; height: 10px; border-radius: 0; overflow: hidden; background: var(--line); }
+.bar .you { background: var(--you); }
+.bar .growth { background: var(--accent); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 0.85rem; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.legend .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.panel {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px 20px; display: grid; gap: 10px; min-width: 0;
+}
+.panel h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; margin: 0; text-wrap: balance; }
+.panel .sub { margin: 0; font-size: 0.85rem; color: var(--muted); }
+.chart-box { position: relative; width: 100%; height: 280px; }
+canvas { display: block; width: 100%; height: 100%; }
+
+.wait { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.wait th, .wait td { text-align: left; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 0.92rem; }
+.wait th { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.wait td.n, .wait th.n { text-align: right; font-family: var(--font-mono); }
+.wait tr:last-child td { border-bottom: 0; }
+.wait .now td { font-weight: 600; }
+.pill { display: inline-block; font-family: var(--font-mono); font-size: 0.78rem; padding: 1px 8px; border: 1px solid var(--solved-border); background: var(--accent-soft); color: var(--accent-hover); }
+
+footer { font-size: 0.8rem; color: var(--muted); max-width: 70ch; }
+
+.brand { display: flex; align-items: baseline; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.brand a.logo { font-family: var(--font-logo); font-weight: 700; font-size: 1.25rem; color: var(--accent); text-decoration: none; letter-spacing: -0.01em; }
+.brand a.logo:hover { color: var(--accent-hover); }
+.brand a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.brand .crumb { font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); }
+.kicker { font-size: 0.72rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.14em; color: var(--accent); margin: 0; }
+footer a { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="brand" aria-label="Site">
+    <a class="logo" href="https://www.abbox.com/">abbox</a>
+    <span class="crumb">/ quests / savings-calculator</span>
+  </nav>
+  <header>
+    <p class="kicker">Compound interest, honestly</p>
+    <h1>Too late to start <em>investing?</em></h1>
+    <p class="lede">Waiting doesn't close the door. It changes the price. Set any three of the four numbers below and the fourth works itself out.</p>
+  </header>
+
+  <div class="layout">
+    <section class="controls" aria-label="Inputs">
+      <p class="howto">Pick the one you want calculated. Move the other three.</p>
+
+      <div class="card" data-key="goal">
+        <div class="card-head">
+          <span class="name" id="n-goal">Goal amount</span>
+          <label class="solve-toggle"><input type="radio" name="solve" value="goal" id="r-goal"> Calculate</label>
+        </div>
+        <output class="value" id="v-goal" for="s-goal"></output>
+        <input type="range" id="s-goal" min="0" max="1000" step="1" aria-labelledby="n-goal">
+        <div class="scale"><span id="lo-goal"></span><span id="hi-goal"></span></div>
+      </div>
+
+      <div class="card" data-key="target">
+        <div class="card-head">
+          <span class="name" id="n-target">Have it by age</span>
+          <label class="solve-toggle"><input type="radio" name="solve" value="target" id="r-target"> Calculate</label>
+        </div>
+        <output class="value" id="v-target" for="s-target"></output>
+        <input type="range" id="s-target" min="20" max="90" step="any" aria-labelledby="n-target">
+        <div class="scale"><span>20</span><span>90</span></div>
+      </div>
+
+      <div class="card" data-key="start">
+        <div class="card-head">
+          <span class="name" id="n-start">Start investing at age</span>
+          <label class="solve-toggle"><input type="radio" name="solve" value="start" id="r-start"> Calculate</label>
+        </div>
+        <output class="value" id="v-start" for="s-start"></output>
+        <input type="range" id="s-start" min="14" max="75" step="any" aria-labelledby="n-start">
+        <div class="scale"><span>14</span><span>75</span></div>
+      </div>
+
+      <div class="card" data-key="monthly">
+        <div class="card-head">
+          <span class="name" id="n-monthly">Invest every month</span>
+          <label class="solve-toggle"><input type="radio" name="solve" value="monthly" id="r-monthly"> Calculate</label>
+        </div>
+        <output class="value" id="v-monthly" for="s-monthly"></output>
+        <input type="range" id="s-monthly" min="0" max="1000" step="1" aria-labelledby="n-monthly">
+        <div class="scale"><span id="lo-monthly"></span><span id="hi-monthly"></span></div>
+      </div>
+
+      <div class="settings">
+        <label for="s-rate">Average yearly return</label>
+        <span class="rate-val" id="v-rate"></span>
+        <input class="full" type="range" id="s-rate" min="0" max="12" step="0.5">
+        <p class="note">7% is roughly what a broad stock index has returned per year after inflation, over long periods. Results are in today's money.</p>
+        <label for="currency">Currency</label>
+        <select id="currency">
+          <option value="USD">$ USD</option>
+          <option value="EUR">€ EUR</option>
+          <option value="GBP">£ GBP</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="results" aria-live="polite">
+      <div class="answer" id="answer">
+        <span class="eyebrow" id="a-label"></span>
+        <div class="big" id="a-big"></div>
+        <p class="sentence" id="a-sentence"></p>
+        <div class="split" id="split">
+          <div class="bar"><div class="you" id="b-you"></div><div class="growth" id="b-growth"></div></div>
+          <div class="legend">
+            <span><i style="background:var(--you)"></i>You put in <span class="num" id="l-you"></span></span>
+            <span><i style="background:var(--accent)"></i>Growth adds <span class="num" id="l-growth"></span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 id="c-title">Monthly amount needed, by the age you start</h2>
+        <p class="sub" id="c-sub"></p>
+        <div class="chart-box"><canvas id="chart" role="img" aria-label="Line chart of the monthly investment needed for each starting age"></canvas></div>
+      </div>
+
+      <div class="panel">
+        <h2>What waiting costs</h2>
+        <p class="sub" id="w-sub"></p>
+        <div style="overflow-x:auto">
+          <table class="wait">
+            <thead><tr><th>Start at</th><th class="n">Per month</th><th class="n">Total you put in</th><th class="n">vs. now</th></tr></thead>
+            <tbody id="w-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>Assumes the same amount every month and a steady average return, compounded monthly. Real markets move up and down, and no return is guaranteed. This is a thinking tool, not financial advice. A small quest by <a href="https://www.abbox.com/">abbox</a>.</footer>
+</div>
+
+<script>
+(function () {
+  const RANGES = {
+    goal:    { min: 1e4, max: 1e7, log: true },
+    monthly: { min: 10,  max: 2e4, log: true },
+    start:   { min: 14,  max: 75 },
+    target:  { min: 20,  max: 90 }
+  };
+  const KEYS = ["goal", "target", "start", "monthly"];
+  const state = { goal: 1000000, target: 50, start: 33, monthly: 1000, rate: 7, solve: "monthly", currency: "USD", error: null };
+
+  // ---- money math ----
+  const fv   = (P, m, i) => i === 0 ? P * m : P * (Math.pow(1 + i, m) - 1) / i;
+  const pmt  = (F, m, i) => i === 0 ? F / m : F * i / (Math.pow(1 + i, m) - 1);
+  const nper = (F, P, i) => i === 0 ? F / P : Math.log(F * i / P + 1) / Math.log(1 + i);
+
+  function solve() {
+    const i = state.rate / 100 / 12;
+    state.error = null;
+    if (state.solve === "goal" || state.solve === "monthly") {
+      const m = (state.target - state.start) * 12;
+      if (m <= 0) { state.error = "Your target age has to be later than your start age."; return; }
+      if (state.solve === "goal") state.goal = fv(state.monthly, m, i);
+      else state.monthly = pmt(state.goal, m, i);
+    } else if (state.solve === "start") {
+      const years = nper(state.goal, state.monthly, i) / 12;
+      state.start = state.target - years;
+      if (state.start < RANGES.start.min) {
+        state.error = `That takes ${fmtYears(years)} of investing, so you'd have to start before age ${RANGES.start.min}. Raise the monthly amount or the target age.`;
+      }
+    } else {
+      const years = nper(state.goal, state.monthly, i) / 12;
+      state.target = state.start + years;
+      if (state.target > 100) {
+        state.error = `That takes ${fmtYears(years)} of investing, past age 100. Raise the monthly amount or lower the goal.`;
+      }
+    }
+  }
+
+  // ---- formatting ----
+  function money(v, compact) {
+    if (!isFinite(v)) return "—";
+    const opts = { style: "currency", currency: state.currency, maximumFractionDigits: 0 };
+    if (compact) { opts.notation = "compact"; opts.maximumFractionDigits = v >= 1e6 ? 2 : 0; }
+    return new Intl.NumberFormat("en-US", opts).format(v);
+  }
+  function fmtYears(y) { return `${Math.round(y)} years`; }
+  function fmtAge(a) {
+    let y = Math.floor(a), m = Math.round((a - y) * 12);
+    if (m === 12) { y += 1; m = 0; }
+    return m ? `${y}<small>y ${m}m</small>` : `${y}`;
+  }
+  function plainAge(a) {
+    let y = Math.floor(a), m = Math.round((a - y) * 12);
+    if (m === 12) { y += 1; m = 0; }
+    return m ? `${y} and ${m} month${m > 1 ? "s" : ""}` : `${y}`;
+  }
+  function niceGoal(v) { const s = v < 1e5 ? 1000 : v < 1e6 ? 5000 : 10000; return Math.round(v / s) * s; }
+  function niceMonthly(v) { const s = v < 100 ? 5 : v < 1000 ? 10 : v < 5000 ? 50 : 100; return Math.round(v / s) * s; }
+
+  // ---- slider mapping ----
+  const $ = id => document.getElementById(id);
+  function toSlider(k, v) {
+    const r = RANGES[k];
+    const c = Math.min(r.max, Math.max(r.min, v));
+    return r.log ? 1000 * Math.log(c / r.min) / Math.log(r.max / r.min) : c;
+  }
+  function fromSlider(k, s) {
+    const r = RANGES[k];
+    if (k === "goal") return niceGoal(r.min * Math.pow(r.max / r.min, s / 1000));
+    if (k === "monthly") return niceMonthly(r.min * Math.pow(r.max / r.min, s / 1000));
+    return Math.round(+s);
+  }
+
+  // ---- render ----
+  function render() {
+    KEYS.forEach(k => {
+      const card = document.querySelector(`.card[data-key="${k}"]`);
+      const solved = state.solve === k;
+      card.classList.toggle("solved", solved);
+      $("r-" + k).checked = solved;
+      const slider = $("s-" + k);
+      slider.disabled = solved;
+      if (solved || document.activeElement !== slider) slider.value = toSlider(k, state[k]);
+      const out = $("v-" + k);
+      if (solved && state.error) out.textContent = "—";
+      else if (k === "goal") out.textContent = money(state.goal);
+      else if (k === "monthly") out.innerHTML = money(state.monthly) + "<small>/ month</small>";
+      else out.innerHTML = solved ? fmtAge(state[k]) : String(state[k]);
+    });
+    $("v-rate").textContent = state.rate.toFixed(1) + "%";
+    $("lo-goal").textContent = money(RANGES.goal.min, true);
+    $("hi-goal").textContent = money(RANGES.goal.max, true);
+    $("lo-monthly").textContent = money(RANGES.monthly.min, true);
+    $("hi-monthly").textContent = money(RANGES.monthly.max, true);
+    renderAnswer();
+    renderWait();
+    drawChart();
+  }
+
+  const LABELS = { goal: "You'll end up with", monthly: "You need to invest", start: "Start no later than", target: "You'll get there at" };
+
+  function renderAnswer() {
+    const box = $("answer");
+    $("a-label").textContent = LABELS[state.solve];
+    box.classList.toggle("error", !!state.error);
+    if (state.error) {
+      $("a-big").textContent = "Not reachable";
+      $("a-sentence").textContent = state.error;
+      $("split").hidden = true;
+      return;
+    }
+    $("split").hidden = false;
+    const big = {
+      goal: money(state.goal),
+      monthly: money(state.monthly) + " a month",
+      start: "age " + plainAge(state.start),
+      target: "age " + plainAge(state.target)
+    }[state.solve];
+    $("a-big").textContent = big;
+    $("a-sentence").innerHTML =
+      `Invest <b>${money(state.monthly)} a month</b> from age <b>${plainAge(state.start)}</b>, ` +
+      `and at ${state.rate.toFixed(1)}% a year you'll have <b>${money(state.goal)}</b> by age <b>${plainAge(state.target)}</b>.`;
+    const months = (state.target - state.start) * 12;
+    const you = state.monthly * months;
+    const growth = Math.max(0, state.goal - you);
+    const total = you + growth;
+    $("b-you").style.width = (100 * you / total) + "%";
+    $("b-growth").style.width = (100 * growth / total) + "%";
+    $("l-you").textContent = money(you);
+    $("l-growth").textContent = money(growth);
+  }
+
+  function renderWait() {
+    const i = state.rate / 100 / 12;
+    const body = $("w-body");
+    body.innerHTML = "";
+    if (state.error) { $("w-sub").textContent = "Adjust the inputs to see this."; return; }
+    $("w-sub").textContent = `Same goal of ${money(state.goal)} by age ${plainAge(state.target)}, starting later.`;
+    const base = state.monthly;
+    [0, 1, 3, 5, 10].forEach(w => {
+      const s = state.start + w;
+      const m = (state.target - s) * 12;
+      if (m < 12) return;
+      const p = pmt(state.goal, m, i);
+      const tr = document.createElement("tr");
+      if (w === 0) tr.className = "now";
+      const delta = w === 0 ? "now" : `+${Math.round(100 * (p / base - 1))}%`;
+      tr.innerHTML = `<td>${plainAge(s)}${w ? ` <span style="color:var(--muted)">(wait ${w} yr${w > 1 ? "s" : ""})</span>` : ""}</td>` +
+        `<td class="n">${money(p)}</td><td class="n">${money(p * m)}</td>` +
+        `<td class="n">${w === 0 ? '<span style="color:var(--muted)">now</span>' : `<span class="pill">${delta}</span>`}</td>`;
+      body.appendChild(tr);
+    });
+  }
+
+  // ---- chart ----
+  const canvas = $("chart");
+  function tok(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function niceStep(range, count) {
+    const raw = range / count, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / mag;
+    return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * mag;
+  }
+  function drawChart() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, rect.width * dpr);
+    canvas.height = Math.max(1, rect.height * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = rect.width, H = rect.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const ink = tok("--ink"), muted = tok("--muted"), line = tok("--line"), accent = tok("--accent"), solvedC = tok("--solved");
+    const mono = "12px " + tok("--font-mono");
+
+    if (state.error) {
+      $("c-sub").textContent = "";
+      ctx.fillStyle = muted; ctx.font = "14px " + tok("--font-body"); ctx.textAlign = "center";
+      ctx.fillText("Adjust the inputs to see the curve.", W / 2, H / 2);
+      return;
+    }
+    const i = state.rate / 100 / 12;
+    const T = state.target;
+    const x0 = Math.max(14, Math.min(18, Math.floor(state.start) - 2));
+    const x1 = T - 3;
+    $("c-sub").textContent = `To reach ${money(state.goal)} by age ${plainAge(T)}. The later you start, the steeper it gets.`;
+
+    const pts = [];
+    for (let s = x0; s <= x1 + 1e-9; s += 0.25) pts.push([s, pmt(state.goal, (T - s) * 12, i)]);
+    if (!pts.length) return;
+    const yCap = Math.max(state.monthly * 3, pmt(state.goal, (T - Math.min(x1, state.start + 10)) * 12, i));
+    const step = niceStep(yCap, 4);
+    const yMax = Math.ceil(yCap / step) * step;
+
+    ctx.font = mono;
+    const yLabelW = ctx.measureText(money(yMax, true)).width;
+    const pad = { l: yLabelW + 14, r: 12, t: 12, b: 28 };
+    const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+    const X = a => pad.l + (a - x0) / (x1 - x0) * pw;
+    const Y = v => pad.t + ph - Math.min(v, yMax) / yMax * ph;
+
+    // grid + y labels
+    ctx.strokeStyle = line; ctx.lineWidth = 1; ctx.fillStyle = muted;
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = 0; v <= yMax + 1e-6; v += step) {
+      const y = Math.round(Y(v)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+      ctx.fillText(money(v, true), pad.l - 8, y);
+    }
+    // x labels
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    const xs = niceStep(x1 - x0, Math.max(3, Math.floor(pw / 70)));
+    for (let a = Math.ceil(x0 / xs) * xs; a <= x1 + 1e-6; a += xs) ctx.fillText(String(Math.round(a)), X(a), pad.t + ph + 8);
+
+    // clip and draw curve
+    ctx.save();
+    ctx.beginPath(); ctx.rect(pad.l, pad.t, pw, ph); ctx.clip();
+    const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + ph);
+    grad.addColorStop(0, accent + "40"); grad.addColorStop(1, accent + "00");
+    ctx.beginPath();
+    pts.forEach(([a, v], k) => k ? ctx.lineTo(X(a), Y(v)) : ctx.moveTo(X(a), Y(v)));
+    ctx.lineTo(X(pts[pts.length - 1][0]), pad.t + ph); ctx.lineTo(X(pts[0][0]), pad.t + ph); ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.beginPath();
+    pts.forEach(([a, v], k) => k ? ctx.lineTo(X(a), Y(v)) : ctx.moveTo(X(a), Y(v)));
+    ctx.strokeStyle = accent; ctx.lineWidth = 2.5; ctx.lineJoin = "round"; ctx.stroke();
+    ctx.restore();
+
+    // current point
+    if (state.start >= x0 && state.start <= x1) {
+      const cx = X(state.start), cy = Y(state.monthly);
+      ctx.setLineDash([3, 4]); ctx.strokeStyle = muted; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, pad.t + ph); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+      ctx.fillStyle = solvedC; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = tok("--surface"); ctx.stroke();
+      const label = `${money(state.monthly)} at ${Math.floor(state.start)}`;
+      ctx.font = "600 12px " + tok("--font-body");
+      const lw = ctx.measureText(label).width;
+      let lx = cx + 10, ly = cy - 14;
+      if (lx + lw > W - pad.r) lx = cx - 10 - lw;
+      if (ly < pad.t + 6) ly = cy + 16;
+      ctx.fillStyle = ink; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText(label, lx, ly);
+    }
+  }
+
+  // ---- events ----
+  KEYS.forEach(k => {
+    $("s-" + k).addEventListener("input", e => {
+      state[k] = fromSlider(k, e.target.value);
+      solve(); render();
+    });
+    $("r-" + k).addEventListener("change", () => {
+      // round the previously solved value so it becomes a clean editable input
+      const prev = state.solve;
+      if (!state.error) {
+        if (prev === "goal") state.goal = niceGoal(state.goal);
+        else if (prev === "monthly") state.monthly = niceMonthly(state.monthly);
+        else state[prev] = Math.round(state[prev]);
+      }
+      state.solve = k;
+      solve(); render();
+    });
+  });
+  $("s-rate").value = state.rate;
+  $("s-rate").addEventListener("input", e => { state.rate = +e.target.value; solve(); render(); });
+  $("currency").addEventListener("change", e => { state.currency = e.target.value; render(); });
+
+
+  new ResizeObserver(() => drawChart()).observe(canvas);
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawChart); } catch (e) {}
+  new MutationObserver(drawChart).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawChart);
+
+  solve(); render();
+})();
+</script>
+</body>
+</html>
