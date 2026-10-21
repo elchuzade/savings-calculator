@@ -193,8 +193,8 @@ footer a { color: var(--accent); }
           <label class="solve-toggle"><input type="radio" name="solve" value="target" id="r-target"> Calculate</label>
         </div>
         <output class="value" id="v-target" for="s-target"></output>
-        <input type="range" id="s-target" min="20" max="90" step="any" aria-labelledby="n-target">
-        <div class="scale"><span>20</span><span>90</span></div>
+        <input type="range" id="s-target" min="0" max="100" step="any" aria-labelledby="n-target">
+        <div class="scale"><span>0</span><span>100</span></div>
       </div>
 
       <div class="card" data-key="start">
@@ -203,8 +203,8 @@ footer a { color: var(--accent); }
           <label class="solve-toggle"><input type="radio" name="solve" value="start" id="r-start"> Calculate</label>
         </div>
         <output class="value" id="v-start" for="s-start"></output>
-        <input type="range" id="s-start" min="14" max="75" step="any" aria-labelledby="n-start">
-        <div class="scale"><span>14</span><span>75</span></div>
+        <input type="range" id="s-start" min="0" max="100" step="any" aria-labelledby="n-start">
+        <div class="scale"><span>0</span><span>100</span></div>
       </div>
 
       <div class="card" data-key="monthly">
@@ -272,8 +272,8 @@ footer a { color: var(--accent); }
   const RANGES = {
     goal:    { min: 1e4, max: 1e7, log: true },
     monthly: { min: 10,  max: 2e4, log: true },
-    start:   { min: 14,  max: 75 },
-    target:  { min: 20,  max: 90 }
+    start:   { min: 0,   max: 100 },
+    target:  { min: 0,   max: 100 }
   };
   const KEYS = ["goal", "target", "start", "monthly"];
   const state = { goal: 1000000, target: 50, start: 33, monthly: 1000, rate: 7, solve: "monthly", currency: "USD", error: null };
@@ -451,10 +451,16 @@ footer a { color: var(--accent); }
     }
     const i = state.rate / 100 / 12;
     const T = state.target;
-    const x0 = Math.max(14, Math.min(18, Math.floor(state.start) - 2));
+    const x0 = Math.max(0, Math.min(18, Math.floor(state.start) - 2));
     const x1 = T - 3;
     $("c-sub").textContent = `To reach ${money(state.goal)} by age ${plainAge(T)}. The later you start, the steeper it gets.`;
 
+    if (x1 - x0 < 1) {
+      $("c-sub").textContent = "Too little time between start and target age to draw a curve.";
+      ctx.fillStyle = muted; ctx.font = "14px " + tok("--font-body"); ctx.textAlign = "center";
+      ctx.fillText("Move the target age further out to see the curve.", W / 2, H / 2);
+      return;
+    }
     const pts = [];
     for (let s = x0; s <= x1 + 1e-9; s += 0.25) pts.push([s, pmt(state.goal, (T - s) * 12, i)]);
     if (!pts.length) return;
