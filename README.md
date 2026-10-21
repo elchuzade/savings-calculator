@@ -1,6 +1,6 @@
 # Too Late to Start?
 
-A savings quest by [abbox](https://www.abbox.com/), live at `quests.abbox.com/savings-calculator`.
+A savings quest by [abbox](https://www.abbox.com/), live at [savings-calculator.abbox.com](https://savings-calculator.abbox.com).
 
 A small calculator for the question "is it too late to start investing?"
 
@@ -24,11 +24,9 @@ where `i` is the yearly return divided by 12 and `n` is the number of months.
 
 Open `index.html` in a browser.
 
-## Publish with GitHub Pages
+## Deployment
 
-1. Push this folder to a GitHub repository.
-2. Go to **Settings → Pages**, choose **Deploy from a branch**, select `main` and `/ (root)`.
-3. The site appears at `https://<your-username>.github.io/<repo-name>/`.
+Deployed on Vercel as a static site (no build step, `index.html` at the root), with DNS on Cloudflare pointing `savings-calculator.abbox.com` at Vercel. Pushing to `main` redeploys.
 
 ## Disclaimer
 
